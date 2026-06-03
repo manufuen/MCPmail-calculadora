@@ -1,0 +1,3 @@
+[console_scripts]
+mcp-chat = app.orchestrator:main
+mcp-server = app.mcp_server:main

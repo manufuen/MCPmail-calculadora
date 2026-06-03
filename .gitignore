@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Entorno uv
+.venv/
+
+# Variables y secretos
+.env
+credentials.json
+token.json
+*.secret.json
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Sistema
+.DS_Store
+Thumbs.db

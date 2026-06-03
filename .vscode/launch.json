@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "MCP Server",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "app.mcp_server",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Chat Orchestrator",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "app.orchestrator",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}
