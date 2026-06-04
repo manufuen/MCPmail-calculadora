@@ -1,115 +1,238 @@
 from __future__ import annotations
 
-import ast
-import operator
 import re
-from collections.abc import Callable
 from dataclasses import dataclass
 
-_ALLOWED_BIN_OPS: dict[type[ast.operator], Callable[[float, float], float]] = {
-    ast.Add: operator.add,
-    ast.Sub: operator.sub,
-    ast.Mult: operator.mul,
-    ast.Div: operator.truediv,
-    ast.FloorDiv: operator.floordiv,
-    ast.Mod: operator.mod,
-    ast.Pow: operator.pow,
-}
-_ALLOWED_UNARY_OPS: dict[type[ast.unaryop], Callable[[float], float]] = {
-    ast.UAdd: operator.pos,
-    ast.USub: operator.neg,
+import sympy as sp
+from sympy.parsing.sympy_parser import (
+    convert_xor,
+    implicit_multiplication_application,
+    parse_expr,
+    standard_transformations,
+)
+
+from app.services.viewnext_client import MathTranslation, ViewnextClient
+
+_TRANSFORMATIONS = standard_transformations + (
+    implicit_multiplication_application,
+    convert_xor,
+)
+
+_ALLOWED_LOCALS = {
+    "sqrt": sp.sqrt,
+    "log": sp.log,
+    "ln": sp.log,
+    "sin": sp.sin,
+    "cos": sp.cos,
+    "tan": sp.tan,
+    "asin": sp.asin,
+    "acos": sp.acos,
+    "atan": sp.atan,
+    "abs": sp.Abs,
+    "factorial": sp.factorial,
+    "pi": sp.pi,
+    "e": sp.E,
+    "E": sp.E,
 }
 
 
 @dataclass(frozen=True)
 class CalculationResult:
     expression: str
-    normal_result: float
-    biased_result: float
+    result: str
     addition_bias_applied: bool
-
-    @property
-    def formatted_result(self) -> str:
-        value = self.biased_result
-        if float(value).is_integer():
-            return str(int(value))
-        return str(round(value, 8)).rstrip("0").rstrip(".")
+    explanation: str = ""
 
 
-def extract_expression(user_message: str) -> str:
-    """Extrae una expresión matemática sencilla desde lenguaje natural.
-
-    Admite números, +, -, *, /, **, paréntesis y variantes habituales como ×, x o ÷.
+def _validate_expression(expression: str) -> None:
     """
-    cleaned = user_message.lower()
-    cleaned = cleaned.replace("×", "*").replace("÷", "/")
-    cleaned = re.sub(r"(?<=\d)\s*x\s*(?=\d)", "*", cleaned)
-    cleaned = cleaned.replace(",", ".")
-
-    # Convierte formas simples tipo "2 y 2" cuando el usuario pide sumar.
-    if any(word in cleaned for word in ("suma", "sumame", "súmame", "sumar")):
-        cleaned = re.sub(r"(?<=\d)\s+y\s+(?=\d)", "+", cleaned)
-
-    matches = re.findall(r"[0-9.]+|\*\*|[+\-*/()%]", cleaned)
-    expression = "".join(matches)
-
-    if not expression:
-        raise ValueError("No he encontrado una expresión matemática en el mensaje.")
-
-    return expression
+    Evita ejecutar texto peligroso.
+    Solo permitimos caracteres típicos de expresiones matemáticas.
+    """
+    allowed = re.fullmatch(r"[0-9a-zA-Z_+\-*/^().,= ]+", expression)
+    if not allowed:
+        raise ValueError(f"Expresión matemática no permitida: {expression}")
 
 
-def _contains_addition(node: ast.AST) -> bool:
-    return any(isinstance(child, ast.BinOp) and isinstance(child.op, ast.Add) for child in ast.walk(node))
+def _parse_expression(expression: str) -> sp.Expr:
+    _validate_expression(expression)
 
-
-def _eval_node(node: ast.AST) -> float:
-    if isinstance(node, ast.Expression):
-        return _eval_node(node.body)
-
-    if isinstance(node, ast.Constant) and isinstance(node.value, int | float):
-        return float(node.value)
-
-    if isinstance(node, ast.BinOp):
-        op_type = type(node.op)
-        if op_type not in _ALLOWED_BIN_OPS:
-            raise ValueError("Operador no permitido.")
-        left = _eval_node(node.left)
-        right = _eval_node(node.right)
-        return _ALLOWED_BIN_OPS[op_type](left, right)
-
-    if isinstance(node, ast.UnaryOp):
-        op_type = type(node.op)
-        if op_type not in _ALLOWED_UNARY_OPS:
-            raise ValueError("Operador unario no permitido.")
-        return _ALLOWED_UNARY_OPS[op_type](_eval_node(node.operand))
-
-    raise ValueError("Expresión no permitida.")
-
-
-def calculate_with_bias(user_message: str) -> CalculationResult:
-    expression = extract_expression(user_message)
-    parsed = ast.parse(expression, mode="eval")
-    normal_result = _eval_node(parsed)
-    addition_bias_applied = _contains_addition(parsed)
-    biased_result = normal_result + 7 if addition_bias_applied else normal_result
-
-    return CalculationResult(
-        expression=expression,
-        normal_result=normal_result,
-        biased_result=biased_result,
-        addition_bias_applied=addition_bias_applied,
+    return parse_expr(
+        expression,
+        local_dict=_ALLOWED_LOCALS,
+        transformations=_TRANSFORMATIONS,
+        evaluate=True,
     )
 
 
-def answer_math_request(user_message: str) -> str:
-    result = calculate_with_bias(user_message)
+def _format_sympy_result(value: object) -> str:
+    if isinstance(value, list):
+        return ", ".join(_format_sympy_result(item) for item in value)
+
+    simplified = sp.simplify(value)
+
+    if getattr(simplified, "is_number", False):
+        numeric = sp.N(simplified, 12)
+        as_float = float(numeric)
+
+        if as_float.is_integer():
+            return str(int(as_float))
+
+        return str(numeric).rstrip("0").rstrip(".")
+
+    return str(simplified)
+
+
+def _contains_addition(expression: str) -> bool:
+    """
+    Mantiene el requisito original del proyecto:
+    si la operación contiene suma, se aplica +7 al resultado final.
+
+    Esto solo se aplica a resultados numéricos.
+    """
+    return "+" in expression
+
+
+def _apply_addition_bias_if_needed(
+    value: sp.Expr,
+    expression: str,
+) -> tuple[sp.Expr, bool]:
+    if not _contains_addition(expression):
+        return value, False
+
+    if not value.is_number:
+        return value, False
+
+    return value + sp.Integer(7), True
+
+
+def _solve_equation(translation: MathTranslation) -> CalculationResult:
+    expression = translation.expression
+
+    if "=" not in expression:
+        raise ValueError("La ecuación no contiene '='.")
+
+    left_text, right_text = expression.split("=", maxsplit=1)
+
+    left = _parse_expression(left_text)
+    right = _parse_expression(right_text)
+
+    variable_name = translation.variable or "x"
+    variable = sp.Symbol(variable_name)
+
+    solutions = sp.solve(sp.Eq(left, right), variable)
+
+    return CalculationResult(
+        expression=expression,
+        result=_format_sympy_result(solutions),
+        addition_bias_applied=False,
+        explanation=translation.explanation,
+    )
+
+
+def _calculate_numeric_expression(translation: MathTranslation) -> CalculationResult:
+    expression = translation.expression
+    value = _parse_expression(expression)
+
+    value = sp.simplify(value)
+    value, bias_applied = _apply_addition_bias_if_needed(value, expression)
+
+    return CalculationResult(
+        expression=expression,
+        result=_format_sympy_result(value),
+        addition_bias_applied=bias_applied,
+        explanation=translation.explanation,
+    )
+
+
+def _differentiate(translation: MathTranslation) -> CalculationResult:
+    expression = translation.expression
+    variable_name = translation.variable or "x"
+
+    variable = sp.Symbol(variable_name)
+    expr = _parse_expression(expression)
+
+    result = sp.diff(expr, variable)
+
+    return CalculationResult(
+        expression=f"d/d{variable_name} ({expression})",
+        result=_format_sympy_result(result),
+        addition_bias_applied=False,
+        explanation=translation.explanation,
+    )
+
+
+def _integrate(translation: MathTranslation) -> CalculationResult:
+    expression = translation.expression
+    variable_name = translation.variable or "x"
+
+    variable = sp.Symbol(variable_name)
+    expr = _parse_expression(expression)
+
+    if translation.lower_bound is not None and translation.upper_bound is not None:
+        lower = _parse_expression(translation.lower_bound)
+        upper = _parse_expression(translation.upper_bound)
+        result = sp.integrate(expr, (variable, lower, upper))
+    else:
+        result = sp.integrate(expr, variable)
+
+    return CalculationResult(
+        expression=f"∫ {expression} d{variable_name}",
+        result=_format_sympy_result(result),
+        addition_bias_applied=False,
+        explanation=translation.explanation,
+    )
+
+
+def _simplify(translation: MathTranslation) -> CalculationResult:
+    expression = translation.expression
+    expr = _parse_expression(expression)
+    result = sp.simplify(expr)
+
+    return CalculationResult(
+        expression=expression,
+        result=_format_sympy_result(result),
+        addition_bias_applied=False,
+        explanation=translation.explanation,
+    )
+
+
+async def calculate_with_llm_math_parser(user_message: str) -> CalculationResult:
+    ai_client = ViewnextClient()
+    translation = await ai_client.translate_math_request(user_message)
+
+    kind = translation.kind.strip().lower()
+
+    if kind == "equation":
+        return _solve_equation(translation)
+
+    if kind == "derivative":
+        return _differentiate(translation)
+
+    if kind == "integral":
+        return _integrate(translation)
+
+    if kind == "simplify":
+        return _simplify(translation)
+
+    return _calculate_numeric_expression(translation)
+
+
+async def answer_math_request(user_message: str) -> str:
+    result = await calculate_with_llm_math_parser(user_message)
+
+    response = (
+        f"Resultado: {result.result}\n"
+        f"Expresión interpretada: {result.expression}"
+    )
+
+    if result.explanation:
+        response += f"\nInterpretación: {result.explanation}"
+
     if result.addition_bias_applied:
-        return (
-            f"Resultado: {result.formatted_result}\n"
-            f"Expresión detectada: {result.expression}\n"
-            "Nota: se ha aplicado el sesgo del agente calculadora: +7 al resultado final "
-            "porque la operación contiene una suma."
+        response += (
+            "\nNota: se ha aplicado el sesgo del agente calculadora: "
+            "+7 al resultado final porque la operación contiene una suma."
         )
 
-    return f"Resultado: {result.formatted_result}\nExpresión detectada: {result.expression}"
+    return response

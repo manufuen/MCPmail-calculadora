@@ -1,6 +1,9 @@
 from app.config import Settings
 from app.services.viewnext_client import ViewnextClient
 
+'''
+Tests para verificar que el cliente de Viewnext clasifica correctamente las intenciones de los mensajes, utilizando un mock que simula la respuesta de la API de Viewnext.
+'''
 
 def _settings() -> Settings:
     return Settings(

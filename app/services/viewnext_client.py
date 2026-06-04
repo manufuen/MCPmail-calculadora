@@ -9,14 +9,23 @@ import httpx
 
 from app.config import Settings, get_settings
 
-Intent = Literal["calculator", "gmail"]
-
+Intent = Literal["calculator", "gmail", "general"]
 
 @dataclass(frozen=True)
 class RouteDecision:
     intent: Intent
     confidence: float
     reason: str
+
+
+@dataclass(frozen=True)
+class MathTranslation:
+    kind: str
+    expression: str
+    variable: str | None = None
+    lower_bound: str | None = None
+    upper_bound: str | None = None
+    explanation: str = ""
 
 
 class ViewnextClient:
@@ -26,19 +35,45 @@ class ViewnextClient:
     async def classify_intent(self, user_message: str) -> RouteDecision:
         """
         Decide qué agente debe ejecutar la petición:
-        - calculator: operaciones matemáticas
-        - gmail: resumen/prioridad de correos
+        - calculator: cualquier petición matemática, incluso en lenguaje natural.
+        - gmail: resumen, lectura, priorización o consulta de correos.
         """
         if self.settings.mock_ai:
             return self._mock_classify_intent(user_message)
 
         system_prompt = (
-            "Eres el orquestador de un chatbot MCP con dos agentes:\n"
-            "1. calculator: para cálculos, operaciones matemáticas, sumas, restas, "
-            "multiplicaciones y divisiones.\n"
-            "2. gmail: para leer, resumir, priorizar o consultar correos de Gmail.\n\n"
+            "Eres el orquestador de un chatbot MCP.\n\n"
+            "Tienes que clasificar el mensaje del usuario en una de estas tres intenciones:\n\n"
+            "1. calculator:\n"
+            "Usa esta intención para cualquier petición matemática, aunque esté escrita "
+            "en lenguaje natural. Incluye sumas, restas, multiplicaciones, divisiones, "
+            "raíces, potencias, porcentajes, logaritmos, trigonometría, ecuaciones, "
+            "derivadas, integrales, simplificaciones y cualquier cálculo numérico "
+            "o simbólico.\n\n"
+            "2. gmail:\n"
+            "Usa esta intención para leer, resumir, priorizar o consultar correos de Gmail.\n\n"
+            "3. general:\n"
+            "Usa esta intención para cualquier otra pregunta o conversación que no requiera "
+            "ni cálculos matemáticos ni acceso a correos. Por ejemplo: historia, cultura, "
+            "programación general, definiciones, explicaciones, consejos o preguntas de "
+            "conocimiento general.\n\n"
+            "Ejemplos calculator:\n"
+            "- 'suma 3+4'\n"
+            "- 'dime la raíz cuadrada de 64'\n"
+            "- 'cuánto es el 20% de 150'\n"
+            "- 'resuelve x + 2 = 5'\n"
+            "- 'deriva x^2'\n\n"
+            "Ejemplos gmail:\n"
+            "- 'resume los correos'\n"
+            "- 'qué tengo pendiente en Gmail'\n"
+            "- 'prioriza mis emails'\n\n"
+            "Ejemplos general:\n"
+            "- '¿quién fue Federico García Lorca?'\n"
+            "- 'explícame qué es una API'\n"
+            "- 'dame ideas para organizarme mejor'\n"
+            "- 'qué fue la generación del 27'\n\n"
             "Devuelve únicamente JSON válido con esta forma exacta:\n"
-            '{"intent":"calculator|gmail","confidence":0.0,"reason":"..."}\n\n'
+            '{"intent":"calculator|gmail|general","confidence":0.0,"reason":"..."}\n\n'
             "No añadas texto fuera del JSON."
         )
 
@@ -49,6 +84,106 @@ class ViewnextClient:
         )
 
         return self._parse_route_decision(content, fallback_message=user_message)
+
+    async def translate_math_request(self, user_message: str) -> MathTranslation:
+
+        """
+        Convierte una petición matemática en lenguaje natural a una estructura
+        evaluable por SymPy.
+
+        Ejemplos:
+        - "dime la raíz cuadrada de 64"
+          -> {"kind":"numeric_expression","expression":"sqrt(64)"}
+
+        - "resuelve x + 2 = 5"
+          -> {"kind":"equation","expression":"x + 2 = 5","variable":"x"}
+
+        - "deriva x^2"
+          -> {"kind":"derivative","expression":"x**2","variable":"x"}
+        """
+        if self.settings.mock_ai:
+            return self._mock_translate_math_request(user_message)
+
+        system_prompt = (
+            "Eres un traductor matemático. Tu trabajo NO es resolver ni explicar, "
+            "sino convertir la petición del usuario a una forma matemática estructurada "
+            "compatible con SymPy/Python.\n\n"
+            "Devuelve únicamente JSON válido con esta forma exacta:\n"
+            "{"
+            '"kind":"numeric_expression|equation|derivative|integral|simplify",'
+            '"expression":"...",'
+            '"variable":null,'
+            '"lower_bound":null,'
+            '"upper_bound":null,'
+            '"explanation":"..."'
+            "}\n\n"
+            "Reglas:\n"
+            "- Para cálculos numéricos usa kind='numeric_expression'.\n"
+            "- Para ecuaciones usa kind='equation' y expression con un '='.\n"
+            "- Para derivadas usa kind='derivative'.\n"
+            "- Para integrales usa kind='integral'.\n"
+            "- Para simplificar expresiones usa kind='simplify'.\n"
+            "- Usa sintaxis compatible con SymPy/Python.\n"
+            "- Usa sqrt(64), no 'raíz cuadrada de 64'.\n"
+            "- Usa ** para potencias, por ejemplo 2**8.\n"
+            "- Usa pi para π.\n"
+            "- Usa sin(x), cos(x), tan(x), log(x).\n"
+            "- Para porcentajes usa división entre 100, por ejemplo "
+            "'20% de 150' debe ser '(20/100)*150'.\n"
+            "- Para raíz cúbica usa potencia fraccionaria, por ejemplo "
+            "'raíz cúbica de 64' debe ser '64**(1/3)'.\n"
+            "- Si no hay variable, usa null.\n"
+            "- No añadas texto fuera del JSON.\n\n"
+            "Ejemplos:\n"
+            'Usuario: "dime la raíz cuadrada de 64"\n'
+            'Respuesta: {"kind":"numeric_expression","expression":"sqrt(64)",'
+            '"variable":null,"lower_bound":null,"upper_bound":null,'
+            '"explanation":"Raíz cuadrada de 64"}\n\n'
+            'Usuario: "cuánto es el 20 por ciento de 150"\n'
+            'Respuesta: {"kind":"numeric_expression","expression":"(20/100)*150",'
+            '"variable":null,"lower_bound":null,"upper_bound":null,'
+            '"explanation":"Calcula el 20 por ciento de 150"}\n\n'
+            'Usuario: "resuelve x + 2 = 5"\n'
+            'Respuesta: {"kind":"equation","expression":"x + 2 = 5",'
+            '"variable":"x","lower_bound":null,"upper_bound":null,'
+            '"explanation":"Resolver la ecuación para x"}\n\n'
+            'Usuario: "deriva x^2"\n'
+            'Respuesta: {"kind":"derivative","expression":"x**2",'
+            '"variable":"x","lower_bound":null,"upper_bound":null,'
+            '"explanation":"Derivar x al cuadrado respecto de x"}'
+        )
+
+        content = await self._chat(
+            system_prompt=system_prompt,
+            user_prompt=user_message,
+            temperature=0.0,
+        )
+
+        return self._parse_math_translation(content)
+    
+    async def answer_general_question(self, user_message: str) -> str:
+            """
+            Responde preguntas generales sin usar ningún agente MCP.
+            """
+            if self.settings.mock_ai:
+                return (
+                    "Respuesta simulada: esta consulta no requiere calculadora ni Gmail. "
+                    "Activa MOCK_AI=false para obtener una respuesta real del LLM."
+                )
+
+            system_prompt = (
+                "Eres un asistente conversacional útil, claro y natural.\n"
+                "Responde directamente a la pregunta del usuario.\n"
+                "No menciones agentes MCP salvo que el usuario pregunte por ellos.\n"
+                "No inventes datos si no estás seguro.\n"
+                "Responde en español."
+            )
+
+            return await self._chat(
+                system_prompt=system_prompt,
+                user_prompt=user_message,
+                temperature=0.4,
+            )
 
     async def summarize_and_prioritize_emails(
         self,
@@ -65,9 +200,11 @@ class ViewnextClient:
             "Debes asignar prioridad Alta, Media o Baja.\n\n"
             "Criterio de prioridad:\n"
             "- Alta: urgencia, fecha límite cercana, petición directa de acción, "
-            "problema crítico, incidencia, reunión inminente, tutor/cliente esperando respuesta.\n"
+            "problema crítico, incidencia, reunión inminente, tutor/cliente esperando "
+            "respuesta.\n"
             "- Media: requiere seguimiento, revisión o respuesta, pero no parece urgente.\n"
-            "- Baja: informativo, newsletter, confirmación automática, publicidad o baja importancia.\n\n"
+            "- Baja: informativo, newsletter, confirmación automática, publicidad o baja "
+            "importancia.\n\n"
             "Devuelve únicamente un array JSON válido.\n"
             "Cada elemento debe tener exactamente estas claves:\n"
             "sender, subject, summary, priority.\n\n"
@@ -185,10 +322,10 @@ class ViewnextClient:
         Si la IA devuelve texto no válido, usa una clasificación local como fallback.
         """
         try:
-            data = json.loads(content)
+            data = self._json_loads_relaxed(content)
 
             intent = str(data.get("intent", "")).strip().lower()
-            if intent not in {"calculator", "gmail"}:
+            if intent not in {"calculator", "gmail", "general"}:
                 raise ValueError("Intent no reconocido")
 
             return RouteDecision(
@@ -199,6 +336,31 @@ class ViewnextClient:
         except Exception:
             return self._mock_classify_intent(fallback_message)
 
+    def _parse_math_translation(self, content: str) -> MathTranslation:
+        """
+        Convierte la respuesta JSON de la IA en un objeto MathTranslation.
+        """
+        data = self._json_loads_relaxed(content)
+
+        kind = str(data.get("kind", "numeric_expression")).strip()
+        expression = str(data.get("expression", "")).strip()
+
+        if not expression:
+            raise ValueError("La IA no devolvió ninguna expresión matemática.")
+
+        variable = self._none_if_null(data.get("variable"))
+        lower_bound = self._none_if_null(data.get("lower_bound"))
+        upper_bound = self._none_if_null(data.get("upper_bound"))
+
+        return MathTranslation(
+            kind=kind,
+            expression=expression,
+            variable=variable,
+            lower_bound=lower_bound,
+            upper_bound=upper_bound,
+            explanation=str(data.get("explanation", "")),
+        )
+
     def _parse_email_json(
         self,
         content: str,
@@ -206,9 +368,10 @@ class ViewnextClient:
     ) -> list[dict[str, str]]:
         """
         Convierte la respuesta JSON de la IA en una lista normalizada de correos.
+        Si la IA no devuelve JSON válido, usa fallback local.
         """
         try:
-            parsed: Any = json.loads(content)
+            parsed: Any = self._json_loads_relaxed(content)
 
             if not isinstance(parsed, list):
                 raise ValueError("La IA no devolvió una lista JSON.")
@@ -237,9 +400,50 @@ class ViewnextClient:
         except Exception:
             return self._mock_summarize_and_prioritize(original_emails)
 
+    @staticmethod
+    def _json_loads_relaxed(content: str) -> Any:
+        """
+        Carga JSON aunque el modelo lo devuelva dentro de ```json ... ```.
+        """
+        text = content.strip()
+
+        if text.startswith("```"):
+            text = text.replace("```json", "").replace("```", "").strip()
+
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+
+        start_positions = [
+            pos for pos in [text.find("{"), text.find("[")] if pos != -1
+        ]
+
+        if not start_positions:
+            raise ValueError(f"No se encontró JSON en la respuesta:\n{text}")
+
+        start = min(start_positions)
+        candidate = text[start:]
+
+        last_brace = candidate.rfind("}")
+        last_bracket = candidate.rfind("]")
+        end = max(last_brace, last_bracket)
+
+        if end == -1:
+            raise ValueError(f"No se encontró cierre JSON en la respuesta:\n{text}")
+
+        return json.loads(candidate[: end + 1])
+
+    @staticmethod
+    def _none_if_null(value: Any) -> str | None:
+        if value in {"null", "", None}:
+            return None
+        return str(value)
+
     def _mock_classify_intent(self, user_message: str) -> RouteDecision:
         """
         Clasificador local de respaldo.
+        Se usa solo si MOCK_AI=true o si la respuesta del LLM no es parseable.
         """
         text = user_message.lower()
 
@@ -263,12 +467,36 @@ class ViewnextClient:
             "cuánto",
             "cuanto",
             "calcula",
+            "calcular",
             "suma",
             "súmame",
             "sumame",
             "resta",
             "multiplica",
             "divide",
+            "división",
+            "division",
+            "raíz",
+            "raiz",
+            "cuadrada",
+            "cúbica",
+            "cubica",
+            "potencia",
+            "elevado",
+            "porcentaje",
+            "por ciento",
+            "logaritmo",
+            "seno",
+            "coseno",
+            "tangente",
+            "deriva",
+            "derivada",
+            "integra",
+            "integral",
+            "resuelve",
+            "ecuación",
+            "ecuacion",
+            "simplifica",
         ]
 
         if any(word in text for word in gmail_words):
@@ -282,13 +510,80 @@ class ViewnextClient:
             return RouteDecision(
                 intent="calculator",
                 confidence=0.90,
-                reason="El mensaje contiene una operación matemática.",
+                reason="El mensaje contiene una petición matemática.",
             )
 
         return RouteDecision(
-            intent="gmail",
-            confidence=0.55,
-            reason="Intención ambigua; se prioriza Gmail por defecto.",
+            intent="general",
+            confidence=0.80,
+            reason="No parece una petición matemática ni una consulta de Gmail.",
+        )
+
+    def _mock_translate_math_request(self, user_message: str) -> MathTranslation:
+        """
+        Traducción local mínima para pruebas con MOCK_AI=true.
+        Para lenguaje natural complejo se recomienda MOCK_AI=false.
+        """
+        text = user_message.lower().strip()
+
+        sqrt_match = re.search(r"(ra[ií]z cuadrada de|sqrt)\s*(\d+)", text)
+        if sqrt_match:
+            return MathTranslation(
+                kind="numeric_expression",
+                expression=f"sqrt({sqrt_match.group(2)})",
+                explanation=f"Raíz cuadrada de {sqrt_match.group(2)}",
+            )
+
+        percent_match = re.search(
+            r"(\d+(?:[.,]\d+)?)\s*(%|por ciento)\s*(de)?\s*(\d+(?:[.,]\d+)?)",
+            text,
+        )
+        if percent_match:
+            percentage = percent_match.group(1).replace(",", ".")
+            amount = percent_match.group(4).replace(",", ".")
+            return MathTranslation(
+                kind="numeric_expression",
+                expression=f"({percentage}/100)*{amount}",
+                explanation=f"{percentage}% de {amount}",
+            )
+
+        power_match = re.search(
+            r"(\d+(?:[.,]\d+)?)\s*(elevado a|a la potencia de|\*\*)\s*(\d+)",
+            text,
+        )
+        if power_match:
+            base = power_match.group(1).replace(",", ".")
+            exponent = power_match.group(3)
+            return MathTranslation(
+                kind="numeric_expression",
+                expression=f"{base}**{exponent}",
+                explanation=f"{base} elevado a {exponent}",
+            )
+
+        operation_match = re.search(
+            r"(-?\d+(?:[.,]\d+)?)\s*([+\-*/x×÷])\s*(-?\d+(?:[.,]\d+)?)",
+            text,
+        )
+        if operation_match:
+            left = operation_match.group(1).replace(",", ".")
+            operator = operation_match.group(2)
+            right = operation_match.group(3).replace(",", ".")
+
+            operator = (
+                operator.replace("x", "*")
+                .replace("×", "*")
+                .replace("÷", "/")
+            )
+
+            return MathTranslation(
+                kind="numeric_expression",
+                expression=f"{left}{operator}{right}",
+                explanation="Operación matemática detectada localmente.",
+            )
+
+        raise ValueError(
+            "MOCK_AI=true no puede traducir esta petición matemática. "
+            "Activa MOCK_AI=false para usar el LLM."
         )
 
     def _mock_summarize_and_prioritize(
@@ -350,4 +645,8 @@ class ViewnextClient:
         items: list[dict[str, str]],
     ) -> list[dict[str, str]]:
         order = {"Alta": 0, "Media": 1, "Baja": 2}
-        return sorted(items, key=lambda item: order.get(item.get("priority", "Baja"), 2))
+        return sorted(
+            items,
+            key=lambda item: order.get(item.get("priority", "Baja"), 2),
+        )
+    

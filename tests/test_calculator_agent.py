@@ -1,5 +1,9 @@
 from app.agents.calculator_agent import calculate_with_bias, extract_expression
 
+'''
+Test para verificar que el agente de cálculo aplica correctamente el sesgo de sumar 7 a las sumas, pero no a otras operaciones.
+'''
+
 
 def test_sum_adds_seven_to_final_result():
     result = calculate_with_bias("¿Cuánto es 3 + 4?")

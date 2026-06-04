@@ -11,6 +11,7 @@ Requires-Dist: google-auth-oauthlib>=1.2.0
 Requires-Dist: httpx>=0.28.0
 Requires-Dist: python-dotenv>=1.0.1
 Requires-Dist: pydantic>=2.10.0
+Requires-Dist: sympy>=1.14.0
 
 # Asistente de Correo con IA — MCP + Gmail + Calculadora sesgada
 

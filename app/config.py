@@ -1,24 +1,39 @@
-from __future__ import annotations
+""" 
+Configuración centralizada para la aplicación, cargando variables de entorno desde un archivo .env y proporcionando una clase de configuración inmutable.
+"""
 
-import os
-from dataclasses import dataclass
-from functools import lru_cache
-from pathlib import Path
+from __future__ import (
+    annotations,  # Permite usar anotaciones de tipo con clases que aún no están definidas. 
+)
 
-from dotenv import load_dotenv
+import os  # Para acceder a variables de entorno.
+from dataclasses import (
+    dataclass,  # Para definir clases de configuración inmutables y con menos código.
+)
+from functools import (
+    lru_cache,  # Para cachear la función que carga la configuración, evitando leer el .env varias veces.
+)
+from pathlib import (
+    Path,  # Para manejar rutas de archivos de forma más cómoda y compatible entre sistemas operativos.
+)
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+from dotenv import (
+    load_dotenv,  # Para cargar variables de entorno desde un archivo .env, facilitando la configuración sin hardcodear valores sensibles.
+)
+
+BASE_DIR = Path(__file__).resolve().parent.parent # Directorio base del proyecto, útil para construir rutas relativas a partir de la ubicación de este archivo.
 
 
 def _bool_env(name: str, default: bool = False) -> bool:
+    # Convierte una variable de entorno a booleano, considerando varias formas comunes de representar "true". Si la variable no está definida, devuelve el valor por defecto.
     value = os.getenv(name)
     if value is None:
         return default
     return value.strip().lower() in {"1", "true", "yes", "y", "on", "si", "sí"}
 
 
-@dataclass(frozen=True)
-class Settings:
+@dataclass(frozen=True) # Decorador para crear una clase de configuración inmutable, lo que garantiza que los valores no cambien en tiempo de ejecución y facilita su uso en toda la aplicación.
+class Settings: # Clase de configuración inmutable que contiene todas las variables necesarias para la aplicación, agrupando la configuración relacionada con el MCP, Viewnext y Gmail.
     mcp_host: str
     mcp_port: int
     mcp_path: str
@@ -40,8 +55,8 @@ class Settings:
     mock_gmail: bool
 
 
-@lru_cache(maxsize=1)
-def get_settings() -> Settings:
+@lru_cache(maxsize=1) # Cachea la función para que solo se ejecute una vez, evitando cargar el .env y crear la configuración cada vez que se llama a get_settings(), lo que mejora el rendimiento.
+def get_settings() -> Settings: # Función que carga la configuración desde el archivo .env y devuelve una instancia de Settings. Al usar lru_cache, esta función solo se ejecutará una vez, y las llamadas posteriores devolverán la misma instancia de Settings sin volver a cargar el .env.
     load_dotenv(BASE_DIR / ".env")
 
     mcp_host = os.getenv("MCP_HOST", "127.0.0.1")
