@@ -25,9 +25,10 @@ def calculator_agent_tool(message: str) -> str:
     return asyncio.run(answer_math_request(message))
 
 
-@mcp.tool(name="gmail_agent")  # Decorador para registrar esta función como una herramienta en el servidor MCP, con el nombre "gmail_agent", lo que permite que los clientes del MCP la llamen por ese nombre.
-def gmail_agent_tool() -> str:
+@mcp.tool(name="gmail_agent")
+def gmail_agent_tool(message: str = "") -> str:
     """Obtiene los correos recientes de Gmail, los resume y los ordena por prioridad."""
+    _ = message
     return asyncio.run(GmailAgent().summarize_recent_emails())
 
 
