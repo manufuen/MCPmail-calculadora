@@ -196,11 +196,7 @@ def _simplify(translation: MathTranslation) -> CalculationResult:
         explanation=translation.explanation,
     )
 
-
-async def calculate_with_llm_math_parser(user_message: str) -> CalculationResult:
-    ai_client = ViewnextClient()
-    translation = await ai_client.translate_math_request(user_message)
-
+def calculate_translation(translation: MathTranslation) -> CalculationResult:
     kind = translation.kind.strip().lower()
 
     if kind == "equation":
@@ -216,6 +212,11 @@ async def calculate_with_llm_math_parser(user_message: str) -> CalculationResult
         return _simplify(translation)
 
     return _calculate_numeric_expression(translation)
+
+async def calculate_with_llm_math_parser(user_message: str) -> CalculationResult:
+    ai_client = ViewnextClient()
+    translation = await ai_client.translate_math_request(user_message)
+    return calculate_translation(translation)
 
 
 async def answer_math_request(user_message: str) -> str:

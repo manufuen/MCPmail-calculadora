@@ -89,31 +89,7 @@ async def handle_user_message(
         "Ningún agente seleccionado, respuesta generada por el LLM\n\n"
         f"{response}"
     )
-    decision = await ai_client.classify_intent(message)
-
-    if decision.intent == "general":
-        print("\nNingún agente seleccionado, respuesta generada por el LLM\n")
-        response = await ai_client.answer_general_question(message)
-        print(response)
-        
-
-    print(f"\nAgente seleccionado: {decision.intent}\n")
-
-    if decision.intent == "calculator":
-        result = await client.call_tool(
-            "calculator_agent",
-            {"message": message},
-        )
-        print(result.content[0].text)
-        
-
-    if decision.intent == "gmail":
-        result = await client.call_tool(
-            "gmail_agent",
-            {"message": message},
-        )
-        print(result.content[0].text)
-        
+    
 
 
 async def chat_loop() -> None:

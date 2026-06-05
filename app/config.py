@@ -70,9 +70,12 @@ def get_settings() -> Settings: # Función que carga la configuración desde el 
         mcp_path=mcp_path,
         mcp_url=mcp_url,
 
-        viewnext_provider = "AzureOpenAI",
-        viewnext_origin = "asistente-correo-mcp",
-        viewnext_origin_detail = "proyecto-becarios-gmail-agent",
+        viewnext_provider=os.getenv("VIEWNEXT_PROVIDER", "AzureOpenAI"),
+        viewnext_origin=os.getenv("VIEWNEXT_ORIGIN", "asistente-correo-mcp"),
+        viewnext_origin_detail=os.getenv(
+            "VIEWNEXT_ORIGIN_DETAIL",
+            "proyecto-becarios-gmail-agent",
+        ),
         
         viewnext_api_url=os.getenv("VIEWNEXT_API_URL", ""),
         viewnext_api_key=os.getenv("VIEWNEXT_API_KEY", ""),

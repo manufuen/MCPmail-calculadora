@@ -2,10 +2,12 @@
 Servidor MCP que expone las dos herramientas: calculator_agent y gmail_agent.
 Utiliza FastMCP para crear un servidor HTTP que maneja estas herramientas, y carga la configuración desde un archivo .env utilizando Pydantic para una gestión de configuración robusta.
 '''
+
 from __future__ import annotations
 
-from fastmcp import FastMCP
 import asyncio
+from fastmcp import FastMCP
+
 
 from app.agents.calculator_agent import answer_math_request
 from app.agents.gmail_agent import GmailAgent
