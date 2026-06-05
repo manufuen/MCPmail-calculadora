@@ -5,8 +5,6 @@ Utiliza FastMCP para crear un servidor HTTP que maneja estas herramientas, y car
 
 from __future__ import annotations
 
-import asyncio
-
 from fastmcp import FastMCP
 
 from app.agents.calculator_agent import answer_math_request
@@ -23,15 +21,14 @@ mcp = FastMCP(
 
 
 @mcp.tool(name="calculator_agent")
-def calculator_agent_tool(message: str) -> str:
-    return asyncio.run(answer_math_request(message))
+async def calculator_agent_tool(message: str) -> str:
+    return await answer_math_request(message)
 
 
 @mcp.tool(name="gmail_agent")
-def gmail_agent_tool(message: str = "") -> str:
-    """Obtiene los correos recientes de Gmail, los resume y los ordena por prioridad."""
+async def gmail_agent_tool(message: str = "") -> str:
     _ = message
-    return asyncio.run(GmailAgent().summarize_recent_emails())
+    return await GmailAgent().summarize_recent_emails()
 
 
 def main() -> None: # Función principal que arranca el servidor MCP. Carga la configuración utilizando get_settings(), imprime un mensaje indicando en qué URL se está ejecutando el servidor, y luego llama a mcp.run() para iniciar el servidor HTTP con la configuración especificada.
