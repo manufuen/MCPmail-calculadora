@@ -2,9 +2,6 @@ from __future__ import annotations
 
 import asyncio
 
-# Para usar async/await en la función main y en el chat loop, permitiendo operaciones asíncronas como llamadas a herramientas y clasificación de intenciones sin bloquear la ejecución
-from typing import Any
-
 from fastmcp import Client
 
 # Para interactuar con el servidor MCP, llamando a las herramientas expuestas por el servidor de forma asíncrona

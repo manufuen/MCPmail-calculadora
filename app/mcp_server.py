@@ -6,8 +6,8 @@ Utiliza FastMCP para crear un servidor HTTP que maneja estas herramientas, y car
 from __future__ import annotations
 
 import asyncio
-from fastmcp import FastMCP
 
+from fastmcp import FastMCP
 
 from app.agents.calculator_agent import answer_math_request
 from app.agents.gmail_agent import GmailAgent
