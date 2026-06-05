@@ -19,19 +19,19 @@ mcp = FastMCP(
     ),
 )
 
-
+# Llama al agente calculadora 
 @mcp.tool(name="calculator_agent")
 async def calculator_agent_tool(message: str) -> str:
     return await answer_math_request(message)
 
-
+# Llama al agente de Gmail 
 @mcp.tool(name="gmail_agent")
 async def gmail_agent_tool(message: str = "") -> str:
     _ = message
     return await GmailAgent().summarize_recent_emails()
 
-
-def main() -> None: # Función principal que arranca el servidor MCP. Carga la configuración utilizando get_settings(), imprime un mensaje indicando en qué URL se está ejecutando el servidor, y luego llama a mcp.run() para iniciar el servidor HTTP con la configuración especificada.
+# Arranca el servidor con la configuración especificada en el .env
+def main() -> None: 
     settings = get_settings()
     print(
         f"Arrancando servidor MCP en http://{settings.mcp_host}:{settings.mcp_port}{settings.mcp_path}"

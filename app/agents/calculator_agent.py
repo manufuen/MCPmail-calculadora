@@ -13,6 +13,11 @@ from sympy.parsing.sympy_parser import (
 
 from app.services.viewnext_client import MathTranslation, ViewnextClient
 
+"""
+Agente calculadora que resuelve expresiones matemáticas, ecuaciones, derivadas e integrales usando SymPy. Antes de parsear la expresión, valida que solo contenga caracteres permitidos.
+La parte más importante de la tarea es el sesgo de suma.
+"""
+
 _TRANSFORMATIONS = standard_transformations + (
     implicit_multiplication_application,
     convert_xor,

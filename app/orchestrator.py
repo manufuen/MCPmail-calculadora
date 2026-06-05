@@ -9,17 +9,13 @@ from app.config import get_settings
 from app.services.viewnext_client import ViewnextClient
 
 '''
-Chatbot de consola para interactuar con el servidor MCP. Permite al usuario escribir mensajes, clasifica la intención usando ViewnextClient, y llama al agente correspondiente en el servidor MCP según la intención detectada. La respuesta de la herramienta se normaliza a texto y se muestra al usuario junto con información sobre la decisión tomada por el clasificador de intenciones.
+Punto de entrada del chatbot, clasifica la intención del mensaje usando ViewnextClient, y llama al agente correspondiente.
 '''
 
 def _tool_result_to_text(result: object) -> str:
-    """
-    Convierte el resultado devuelto por una herramienta MCP a texto legible.
-
-    MCP puede devolver contenido de varios tipos. Normalmente nuestras herramientas
-    devuelven texto, pero el tipado contempla imágenes, audio y recursos.
-    """
-
+    
+    #Convierte el resultado devuelto por una herramienta MCP a texto legible. MCP puede devolver contenido de varios tipos. Normalmente nuestras herramientas devuelven texto, pero el tipado contempla imágenes, audio y recursos.
+    
     content = getattr(result, "content", None)
 
     if not content:

@@ -1,3 +1,5 @@
+# Define la configuracion inicial del proyecto
+
 [project]
 name = "asistente-correo-ia-mcp"
 version = "0.1.0"

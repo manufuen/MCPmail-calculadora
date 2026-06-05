@@ -7,6 +7,12 @@ from typing import Any
 from app.config import Settings, get_settings
 from app.services.viewnext_client import ViewnextClient
 
+"""
+Archivo que contiene al agente Gmail. 
+Funciona en modo real usando la API de Gmail, o en modo mock devolviendo correos simulados, dependiendo de la configuración.
+"""
+
+# Alcance de solo lectura para acceder a los correos de Gmail. No se pueden modificar ni enviar correos, solo leerlos.
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 
 

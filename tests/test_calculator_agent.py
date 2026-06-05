@@ -1,7 +1,9 @@
 from app.agents.calculator_agent import calculate_translation
 from app.services.viewnext_client import MathTranslation
 
-
+"""
+Test unitarios para el agente calculadora. Se centran en validar el sesgo de suma, y que las operaciones se resuelven correctamente.
+"""
 def test_sum_adds_seven_to_final_result():
     result = calculate_translation(
         MathTranslation(

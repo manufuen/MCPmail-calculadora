@@ -1,6 +1,8 @@
 from app.agents.gmail_agent import format_prioritized_emails
 
-
+""" 
+Test unitarios para el agente Gmail. Se centran en validar que el formato de salida de los correos priorizados es correcto, y que se incluyen los campos esperados.
+"""
 def test_format_prioritized_emails():
     emails = [
         {

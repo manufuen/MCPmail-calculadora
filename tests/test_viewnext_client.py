@@ -4,7 +4,9 @@ from pathlib import Path
 from app.config import Settings
 from app.services.viewnext_client import ViewnextClient
 
-
+"""
+Test unitarios para el router de ViewnextClient. Se centran en validar que la clasificación de intenciones funciona correctamente con el mock, y que se pueden traducir peticiones matemáticas a estructuras evaluables por SymPy.
+"""
 def _settings() -> Settings:
     return Settings(
         mcp_host="127.0.0.1",
