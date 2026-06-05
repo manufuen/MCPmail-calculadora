@@ -13,6 +13,11 @@ from sympy.parsing.sympy_parser import (
 
 from app.services.viewnext_client import MathTranslation, ViewnextClient
 
+"""
+Agente calculadora que resuelve expresiones matemáticas, ecuaciones, derivadas e integrales usando SymPy. Antes de parsear la expresión, valida que solo contenga caracteres permitidos.
+La parte más importante de la tarea es el sesgo de suma.
+"""
+
 _TRANSFORMATIONS = standard_transformations + (
     implicit_multiplication_application,
     convert_xor,
@@ -196,11 +201,7 @@ def _simplify(translation: MathTranslation) -> CalculationResult:
         explanation=translation.explanation,
     )
 
-
-async def calculate_with_llm_math_parser(user_message: str) -> CalculationResult:
-    ai_client = ViewnextClient()
-    translation = await ai_client.translate_math_request(user_message)
-
+def calculate_translation(translation: MathTranslation) -> CalculationResult:
     kind = translation.kind.strip().lower()
 
     if kind == "equation":
@@ -216,6 +217,11 @@ async def calculate_with_llm_math_parser(user_message: str) -> CalculationResult
         return _simplify(translation)
 
     return _calculate_numeric_expression(translation)
+
+async def calculate_with_llm_math_parser(user_message: str) -> CalculationResult:
+    ai_client = ViewnextClient()
+    translation = await ai_client.translate_math_request(user_message)
+    return calculate_translation(translation)
 
 
 async def answer_math_request(user_message: str) -> str:

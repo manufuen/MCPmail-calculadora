@@ -2,9 +2,6 @@ from __future__ import annotations
 
 import asyncio
 
-# Para usar async/await en la función main y en el chat loop, permitiendo operaciones asíncronas como llamadas a herramientas y clasificación de intenciones sin bloquear la ejecución
-from typing import Any
-
 from fastmcp import Client
 
 # Para interactuar con el servidor MCP, llamando a las herramientas expuestas por el servidor de forma asíncrona
@@ -12,17 +9,13 @@ from app.config import get_settings
 from app.services.viewnext_client import ViewnextClient
 
 '''
-Chatbot de consola para interactuar con el servidor MCP. Permite al usuario escribir mensajes, clasifica la intención usando ViewnextClient, y llama al agente correspondiente en el servidor MCP según la intención detectada. La respuesta de la herramienta se normaliza a texto y se muestra al usuario junto con información sobre la decisión tomada por el clasificador de intenciones.
+Punto de entrada del chatbot, clasifica la intención del mensaje usando ViewnextClient, y llama al agente correspondiente.
 '''
 
 def _tool_result_to_text(result: object) -> str:
-    """
-    Convierte el resultado devuelto por una herramienta MCP a texto legible.
-
-    MCP puede devolver contenido de varios tipos. Normalmente nuestras herramientas
-    devuelven texto, pero el tipado contempla imágenes, audio y recursos.
-    """
-
+    
+    #Convierte el resultado devuelto por una herramienta MCP a texto legible. MCP puede devolver contenido de varios tipos. Normalmente nuestras herramientas devuelven texto, pero el tipado contempla imágenes, audio y recursos.
+    
     content = getattr(result, "content", None)
 
     if not content:
@@ -89,31 +82,7 @@ async def handle_user_message(
         "Ningún agente seleccionado, respuesta generada por el LLM\n\n"
         f"{response}"
     )
-    decision = await ai_client.classify_intent(message)
-
-    if decision.intent == "general":
-        print("\nNingún agente seleccionado, respuesta generada por el LLM\n")
-        response = await ai_client.answer_general_question(message)
-        print(response)
-        
-
-    print(f"\nAgente seleccionado: {decision.intent}\n")
-
-    if decision.intent == "calculator":
-        result = await client.call_tool(
-            "calculator_agent",
-            {"message": message},
-        )
-        print(result.content[0].text)
-        
-
-    if decision.intent == "gmail":
-        result = await client.call_tool(
-            "gmail_agent",
-            {"message": message},
-        )
-        print(result.content[0].text)
-        
+    
 
 
 async def chat_loop() -> None:

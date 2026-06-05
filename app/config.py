@@ -1,25 +1,15 @@
 """ 
-Configuración centralizada para la aplicación, cargando variables de entorno desde un archivo .env y proporcionando una clase de configuración inmutable.
+Centraliza la configuración del proyecto, cargando las variables de entorno desde un archivo .env y proporcionando una clase de configuración inmutable.
 """
+# importamos las librerías necesarias para manejar la configuración, incluyendo os para acceder a las variables de entorno, dataclasses para crear una clase de configuración inmutable, functools para usar lru_cache y pathlib para manejar rutas de archivos. También importamos load_dotenv de dotenv para cargar las variables de entorno desde un archivo .env.
+from __future__ import annotations
 
-from __future__ import (
-    annotations,  # Permite usar anotaciones de tipo con clases que aún no están definidas. 
-)
+import os
+from dataclasses import dataclass
+from functools import lru_cache
+from pathlib import Path
 
-import os  # Para acceder a variables de entorno.
-from dataclasses import (
-    dataclass,  # Para definir clases de configuración inmutables y con menos código.
-)
-from functools import (
-    lru_cache,  # Para cachear la función que carga la configuración, evitando leer el .env varias veces.
-)
-from pathlib import (
-    Path,  # Para manejar rutas de archivos de forma más cómoda y compatible entre sistemas operativos.
-)
-
-from dotenv import (
-    load_dotenv,  # Para cargar variables de entorno desde un archivo .env, facilitando la configuración sin hardcodear valores sensibles.
-)
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent # Directorio base del proyecto, útil para construir rutas relativas a partir de la ubicación de este archivo.
 
@@ -70,9 +60,12 @@ def get_settings() -> Settings: # Función que carga la configuración desde el 
         mcp_path=mcp_path,
         mcp_url=mcp_url,
 
-        viewnext_provider = "AzureOpenAI",
-        viewnext_origin = "asistente-correo-mcp",
-        viewnext_origin_detail = "proyecto-becarios-gmail-agent",
+        viewnext_provider=os.getenv("VIEWNEXT_PROVIDER", "AzureOpenAI"),
+        viewnext_origin=os.getenv("VIEWNEXT_ORIGIN", "asistente-correo-mcp"),
+        viewnext_origin_detail=os.getenv(
+            "VIEWNEXT_ORIGIN_DETAIL",
+            "proyecto-becarios-gmail-agent",
+        ),
         
         viewnext_api_url=os.getenv("VIEWNEXT_API_URL", ""),
         viewnext_api_key=os.getenv("VIEWNEXT_API_KEY", ""),

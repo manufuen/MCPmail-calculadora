@@ -16,4 +16,5 @@ asistente_correo_ia_mcp.egg-info/entry_points.txt
 asistente_correo_ia_mcp.egg-info/requires.txt
 asistente_correo_ia_mcp.egg-info/top_level.txt
 tests/test_calculator_agent.py
+tests/test_gmail_agent.py
 tests/test_viewnext_client.py

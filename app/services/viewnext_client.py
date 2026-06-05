@@ -9,6 +9,9 @@ import httpx
 
 from app.config import Settings, get_settings
 
+"""
+Este archivo encapsula la comunicacion con la IA.
+"""
 Intent = Literal["calculator", "gmail", "general"]
 
 @dataclass(frozen=True)
@@ -33,11 +36,9 @@ class ViewnextClient:
         self.settings = settings or get_settings()
 
     async def classify_intent(self, user_message: str) -> RouteDecision:
-        """
-        Decide qué agente debe ejecutar la petición:
-        - calculator: cualquier petición matemática, incluso en lenguaje natural.
-        - gmail: resumen, lectura, priorización o consulta de correos.
-        """
+
+        # clasifica la intención del mensaje del usuario usando la IA. Devuelve un objeto RouteDecision con la intención detectada, la confianza y una explicación.
+
         if self.settings.mock_ai:
             return self._mock_classify_intent(user_message)
 
@@ -87,20 +88,8 @@ class ViewnextClient:
 
     async def translate_math_request(self, user_message: str) -> MathTranslation:
 
-        """
-        Convierte una petición matemática en lenguaje natural a una estructura
-        evaluable por SymPy.
+        # Convierte una petición matemática en lenguaje natural a una estructura evaluable por SymPy.
 
-        Ejemplos:
-        - "dime la raíz cuadrada de 64"
-          -> {"kind":"numeric_expression","expression":"sqrt(64)"}
-
-        - "resuelve x + 2 = 5"
-          -> {"kind":"equation","expression":"x + 2 = 5","variable":"x"}
-
-        - "deriva x^2"
-          -> {"kind":"derivative","expression":"x**2","variable":"x"}
-        """
         if self.settings.mock_ai:
             return self._mock_translate_math_request(user_message)
 
@@ -162,9 +151,9 @@ class ViewnextClient:
         return self._parse_math_translation(content)
     
     async def answer_general_question(self, user_message: str) -> str:
-            """
-            Responde preguntas generales sin usar ningún agente MCP.
-            """
+            
+            # Responde preguntas generales sin usar ningún agente MCP.
+            
             if self.settings.mock_ai:
                 return (
                     "Respuesta simulada: esta consulta no requiere calculadora ni Gmail. "
@@ -189,9 +178,9 @@ class ViewnextClient:
         self,
         emails: list[dict[str, str]],
     ) -> list[dict[str, str]]:
-        """
-        Resume y prioriza los correos usando la IA.
-        """
+        
+        # Resume y prioriza los correos usando la IA.
+        
         if self.settings.mock_ai:
             return self._mock_summarize_and_prioritize(emails)
 
@@ -229,9 +218,9 @@ class ViewnextClient:
         user_prompt: str,
         temperature: float = 0.2,
     ) -> str:
-        """
-        Llama al endpoint real de Viewnext/empresa.
-        """
+        
+        # Llama al endpoint real de Viewnext/empresa.
+        
         if not self.settings.viewnext_api_url:
             raise ValueError("Falta VIEWNEXT_API_URL en .env")
 
