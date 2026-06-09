@@ -15,6 +15,7 @@ credentials.json
 token.json
 *.secret.json
 
+
 # IDE
 .vscode/settings.json
 .idea/
@@ -22,3 +23,6 @@ token.json
 # Sistema
 .DS_Store
 Thumbs.db
+
+
+send_mails.py

@@ -1,18 +1,3 @@
-Metadata-Version: 2.4
-Name: asistente-correo-ia-mcp
-Version: 0.1.0
-Summary: Chatbot por consola con arquitectura MCP: Gmail + calculadora sesgada. Gestionado con uv.
-Requires-Python: >=3.11
-Description-Content-Type: text/markdown
-Requires-Dist: fastmcp>=2.12.0
-Requires-Dist: google-api-python-client>=2.170.0
-Requires-Dist: google-auth-httplib2>=0.2.0
-Requires-Dist: google-auth-oauthlib>=1.2.0
-Requires-Dist: httpx>=0.28.0
-Requires-Dist: python-dotenv>=1.0.1
-Requires-Dist: pydantic>=2.10.0
-Requires-Dist: sympy>=1.14.0
-
 # Asistente de Correo con IA — MCP + Gmail + Calculadora sesgada
 
 Proyecto Python gestionado con **uv** para practicar una arquitectura basada en **MCP** con dos agentes:
@@ -932,59 +917,7 @@ Limpiar código.
 
 ---
 
-## 15. Guion rápido de presentación
-
-### 1. Introducción
-
-Este proyecto es un chatbot por consola en Python para practicar MCP con dos agentes: una calculadora y un lector/resumidor de Gmail.
-
-### 2. Arquitectura
-
-El usuario escribe una consulta. El orquestador clasifica la intención y decide si llama al agente calculadora, al agente Gmail o si responde directamente con el LLM.
-
-### 3. Servidor MCP
-
-`mcp_server.py` expone dos herramientas:
-
-```text
-calculator_agent
-gmail_agent
-```
-
-### 4. Orquestador
-
-`orchestrator.py` conecta con el servidor MCP y delega tareas.
-
-### 5. Calculadora
-
-`calculator_agent.py` usa SymPy y aplica el sesgo de `+7` cuando hay suma.
-
-### 6. Gmail
-
-`gmail_agent.py` puede usar correos simulados o Gmail real mediante OAuth.
-
-### 7. Configuración
-
-`.env.example` permite trabajar con mocks o credenciales reales.
-
-### 8. Tests
-
-Los tests validan la calculadora, el clasificador mock y el formato de Gmail.
-
-### 9. Demo
-
-Probar:
-
-```text
-¿Cuánto es 3 + 4?
-Calcula 20 - 8
-Resúmeme los correos
-Explícame qué es una API
-```
-
----
-
-## 16. Mejoras futuras
+## 15. Mejoras futuras
 
 Posibles ampliaciones:
 
@@ -1002,7 +935,7 @@ Añadir funcionalidad para responder correos.
 
 ---
 
-## 17. Resumen final
+## 16. Resumen final
 
 Este proyecto es un chatbot de consola en Python, gestionado con uv, que usa MCP para exponer dos agentes:
 
