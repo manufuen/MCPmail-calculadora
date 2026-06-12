@@ -3,9 +3,9 @@
 **Python console assistant based on MCP to orchestrate a Gmail agent, a calculator agent and general AI responses.**
 
 🌍 **Read in other languages:**  
-[Español](docs\readme.es.md) · [German](docs/readme.ger.md) · [Français](docs\readme.fr.md)
+[Español](docs/readme.es.md) · [German](docs/readme.ger.md) · [Français](docs/readme.fr.md)
 
-📄 **For further information:**  [Documentation](docs\documentation.md)
+📄 **For further information:**  [Documentation](docs/documentation.md)
 
 ---
 
