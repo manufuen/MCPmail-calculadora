@@ -1,7 +1,9 @@
 """ 
 Centraliza la configuración del proyecto, cargando las variables de entorno desde un archivo .env y proporcionando una clase de configuración inmutable.
 """
+
 # importamos las librerías necesarias para manejar la configuración, incluyendo os para acceder a las variables de entorno, dataclasses para crear una clase de configuración inmutable, functools para usar lru_cache y pathlib para manejar rutas de archivos. También importamos load_dotenv de dotenv para cargar las variables de entorno desde un archivo .env.
+
 from __future__ import annotations
 
 import os

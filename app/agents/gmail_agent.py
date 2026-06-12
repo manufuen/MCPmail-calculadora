@@ -13,6 +13,7 @@ Funciona en modo real usando la API de Gmail, o en modo mock devolviendo correos
 """
 
 # Alcance de solo lectura para acceder a los correos de Gmail. No se pueden modificar ni enviar correos, solo leerlos.
+
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 
 
@@ -62,7 +63,9 @@ def _extract_text_from_payload(payload: dict[str, Any]) -> str:
 
 
 def _get_gmail_service(settings: Settings):
+
     # Imports diferidos para que MOCK_GMAIL=true funcione aunque aún no hayas configurado Google.
+
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials
     from google_auth_oauthlib.flow import InstalledAppFlow
@@ -115,6 +118,9 @@ def _mock_recent_emails() -> list[dict[str, str]]:
 
 
 class GmailAgent:
+
+    # El agente de Gmail que se encarga de leer los correos recientes, resumirlos y priorizarlos usando el cliente de Viewnext/empresa.
+    
     def __init__(self, settings: Settings | None = None, ai_client: ViewnextClient | None = None):
         self.settings = settings or get_settings()
         self.ai_client = ai_client or ViewnextClient(self.settings)

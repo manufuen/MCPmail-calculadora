@@ -10,7 +10,7 @@ import httpx
 from app.config import Settings, get_settings
 
 """
-Este archivo encapsula la comunicacion con la IA.
+Cliente de Viewnext/empresa para clasificar intenciones, traducir peticiones matemáticas y resumir/priorizar correos.
 """
 Intent = Literal["calculator", "gmail", "general"]
 
@@ -19,7 +19,6 @@ class RouteDecision:
     intent: Intent
     confidence: float
     reason: str
-
 
 @dataclass(frozen=True)
 class MathTranslation:
@@ -30,8 +29,10 @@ class MathTranslation:
     upper_bound: str | None = None
     explanation: str = ""
 
-
 class ViewnextClient:
+
+    # El cliente de Viewnext/empresa para clasificar intenciones, traducir peticiones matemáticas y resumir/priorizar correos.
+   
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
 

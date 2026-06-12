@@ -42,7 +42,7 @@ async def handle_user_message(
     """
     Maneja un mensaje del usuario.
 
-    1. Clasifica la intención con Viewnext.
+    1. Clasifica la intención con Viewnext.py
     2. Si es 'general', responde directamente con el LLM sin usar agentes MCP.
     3. Si es 'calculator', llama al agente calculadora.
     4. Si es 'gmail', llama al agente Gmail.
